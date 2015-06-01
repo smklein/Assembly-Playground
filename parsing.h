@@ -3,6 +3,7 @@
 
 #include <string>
 using namespace std;
-int parse_command(string &raw_command);
+int parse_command(string &raw_command, string &cmd,
+                  string &arg1, string &arg2);
 
 #endif

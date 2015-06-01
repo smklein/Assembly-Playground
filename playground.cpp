@@ -1,52 +1,35 @@
 #include <iostream>
 #include <string>
 #include "parsing.h"
+#include "opcodes.h"
 
 using namespace std;
 
-struct registers_x86 {
-    // General registers
-    int eax;
-    int ebx;
-    int ecx;
-    int edx;
-    
-    // Segment registers
-    int cs;
-    int ds;
-    int es;
-    int fs;
-    int gs;
-    int ss;
-    
-    // Index and pointers
-    int esi;
-    int edi;
-    int ebp;
-    int eip;
-    int esp;
-    
-    int eflags;
-
-    void print() {
-        cout << "[GENERAL REGISTERS]\n";
-        cout << "eax: " << eax << ", ebx: " << ebx << ", ecx: " << ecx 
-             << ", edx: " << edx << endl;
-        cout << "[SEGMENT REGISTERS]\n";
-        cout << "cs: " << cs << ", ds: " << ds << ", es: " << es << ", fs: "
-             << fs << ", gs: " << gs << ", ss: " << ss << endl;
-        cout << "[INDEX AND POINTER REGISTERS]\n";
-        cout << "esi: " << esi << ", edi: " << edi << ", ebp: " << ebp
-             << ", eip: " << eip << ", esp: " << esp << endl;
-        cout << "[EFLAGS]\n";
-        cout << eflags << endl;
-    }
-} ;
-
-
 int evaluate_command(registers_x86 &regs, string &raw_command) {
     cout << "Evaluating: " << raw_command << endl;
-    parse_command(raw_command);
+    string cmd, arg1, arg2;
+    int num_args;
+    if ((num_args = parse_command(raw_command, cmd, arg1, arg2)) == -1) {
+        cout << "[INVALID COMMAND]" << endl;
+        return -1;
+    }
+    cout << "[EVAL][CMD]: [" << cmd << "]\n";
+    cout << "[EVAL][# ARGS]: " << num_args << endl;
+    if (num_args >= 1)
+        cout << "[EVAL][ARG1]: [" << arg1 << "]\n";
+    if (num_args == 2)
+        cout << "[EVAL][ARG2]: [" << arg2 << "]\n";
+    // TODO: command is verified here, num args verified, args themselves
+    // are not verified yet.
+    
+    // TODO: Filter the args. Identify information. Make them "trusted".
+    argument arg1_info;
+    argument arg2_info;
+
+    arg1_info.type = ADDR;
+    arg1_info.address = &regs.eax;
+    execute_command(regs, cmd, arg1_info, arg2_info);
+    
     return 0;
 }
 
@@ -67,7 +50,7 @@ void assembly_playground() {
             cout << "[HELP] Help message here\n"; // TODO
             cout << "regs -- Print out all register values\n";
         } else if (command.compare("regs") == 0) {
-            regs.print();
+            print(regs);
         } else if (command.compare("") == 0) {
             // Desired behavior: do nothing.
         } else {
