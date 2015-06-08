@@ -14,7 +14,7 @@ opcodes.o: opcodes.cpp
 parsing.o: parsing.cpp
 	$(CC) $(CFLAGS) parsing.cpp
 
-playground.o: opcodes.h playground.cpp
+playground.o: playground.cpp
 	$(CC) $(CFLAGS) playground.cpp
 
 clean:

@@ -2,6 +2,7 @@
 #define __OPCODES_H__
 
 #include <string>
+#include "parsing.h"
 using namespace std;
 
 struct registers_x86 {
@@ -29,20 +30,13 @@ struct registers_x86 {
     int eflags;
 } ;
 
-enum arg_type { IMM, ADDR };
-
-struct argument {
-    arg_type type;
-    union {
-        int32_t immediate;
-        int32_t *address;
-    };
-} ;
-
 void print(registers_x86 &reg);
 
-int execute_command(registers_x86 &reg,
-                    string &cmd, argument &arg1, argument &arg2);
+registers_x86_type get_reg_type(string &reg);
+int *get_register_location(registers_x86 &regs, registers_x86_type reg);
+
+int execute_command(char memory[], registers_x86 &reg,
+                    string &cmd, argument &src, argument &dest);
 int get_num_args(string opcode);
 
 #endif
