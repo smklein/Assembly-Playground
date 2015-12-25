@@ -6,7 +6,7 @@ LFLAGS = -Wall $(DEBUG)
 
 
 playground : $(OBJS)
-	$(CC) $(LFLAGS) $(OBJS) -o playground
+	$(CC) $(LFLAGS) $(OBJS) -o out/playground
 
 opcodes.o: opcodes.cpp
 	$(CC) $(CFLAGS) opcodes.cpp
