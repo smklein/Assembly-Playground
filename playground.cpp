@@ -1,8 +1,10 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include "shared_constants.h"
+
+#include "inputoutput.h"
 #include "parsing.h"
+#include "shared_constants.h"
 #include "opcodes.h"
 
 using namespace std;
@@ -11,20 +13,18 @@ using namespace std;
  * Given a piece of possibly malformed assembly from the user,
  * operate on the given registers and execute the command.
  */
-int evaluate_command(char memory[], registers_x86 &regs, string &raw_command) {
-    cout << "\t[EVAL] Evaluating: " << raw_command << endl;
+int evaluate_command(char memory[], registers_x86 &regs,
+                     string &raw_command) {
     string cmd, src_arg, dest_arg;
+    output_dbg_eval_start(raw_command);
     int num_args;
     if ((num_args = parse_command(raw_command, cmd, src_arg, dest_arg)) == -1) {
-        cout << "[INVALID COMMAND]" << endl;
+        output_err_command_invalid();
         return -1;
     }
-    cout << "\t[EVAL][CMD]: [" << cmd << "]\n";
-    cout << "\t[EVAL][# ARGS]: " << num_args << endl;
-    if (num_args >= 1)
-        cout << "\t[EVAL][SRC]: [" << src_arg << "]\n";
-    if (num_args == 2)
-        cout << "\t[EVAL][DEST]: [" << dest_arg << "]\n";
+
+    output_dbg_command_info(cmd, num_args, src_arg, dest_arg);
+
     // TODO: command is verified here, num args verified, args themselves
     // are not verified yet.
     
@@ -35,13 +35,13 @@ int evaluate_command(char memory[], registers_x86 &regs, string &raw_command) {
     // TODO Call this
     int retval;
     if (num_args >= 1) {
-        cout << "\t[EVAL] Parsing src\n";
+        output_dbg_parse_src();
         retval = parse_argument(src_arg, src_arg_info);
         if (retval)
             return -1;
     }
     if (num_args == 2) {
-        cout << "\t[EVAL] Parsing dest\n";
+        output_dbg_parse_dest();
         retval = parse_argument(dest_arg, dest_arg_info);
         if (retval)
             return -1;
@@ -64,16 +64,19 @@ void assembly_playground() {
     memset(&regs, 0, sizeof(regs));
     memset(memory, 0, MEMORY_SIZE_BYTES);
     while (true) {
-        cout << ">> ";
+        output_msg_command_prompt();
         getline (cin, command);
-        if (command.compare("quit") == 0) {
-            cout << "[EXIT] Exiting playground\n";
+        if (command.compare(QUIT_STRING) == 0) {
+            /*  QUIT  */
+            output_msg_exit();
             delete[] memory;
             exit(0);
-        } else if (command.compare("regs") == 0) {
+        } else if (command.compare(REGISTERS_STRING) == 0) {
+            /*  REGISTER DUMP  */
             print(regs);
-        } else if (command.find("print") == 0) {
-            string arg = command.substr(strlen("print"));
+        } else if (command.find(PRINT_STRING) == 0) {
+            /*  MEMORY DUMP  */
+            string arg = command.substr(strlen(PRINT_STRING));
             replace_hex(arg);
             trim(arg);
             stringstream str(arg);
@@ -85,17 +88,13 @@ void assembly_playground() {
                 cout << hex << "MEM[ 0x" << val << " ]: ";
                 cout << "0x" << hex << (int) memory[val] << endl;
             }   
-        } else if (command.compare("help") == 0) {
-            cout << "[HELP] Commands:\n";
-            cout << "   Calling convention: AT&T. [CMD   SRC, DEST]\n";
-            cout << "   Arch: x86.\n";
-            cout << "   Endianness: Little endian.\n";
-            cout << "regs -- Print out all register values\n";
-            cout << "print ADDR -- Print out value at memory address ADDR\n";
-            cout << "quit -- Exit the assembly playground\n";
+        } else if (command.compare(HELP_STRING) == 0) {
+            /*  HELP  */
+            output_msg_help();
         } else if (command.compare("") == 0) {
-            // Desired behavior: do nothing.
+            /*  IGNORE  */
         } else {
+            /*  EVALUATE  */
             evaluate_command(memory, regs, command);
         }
     }
@@ -103,7 +102,6 @@ void assembly_playground() {
 }
 
 int main() {
-    cout << "[ASM PLAYGROUND STARTING]\n";
-    cout << "Commands include [help], [quit], etc...\n";
+    output_msg_start();
     assembly_playground();
 }
