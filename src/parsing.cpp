@@ -121,7 +121,7 @@ int get_two_arguments(string &command, string &src, string &dest) {
  * arguments. Do not interpret the arguments yet.
  */
 int parse_command(VirtualSystem &vs,
-                  string &raw_command, string &cmd,
+                  string raw_command, string &instruction,
                   string &src, string &dest) {
     int retval;
     trim(raw_command);
@@ -132,15 +132,17 @@ int parse_command(VirtualSystem &vs,
     cout << "\t[PARSING] With updated commas: " << raw_command << endl;
     if (retval)
         return retval;
-    retval = get_command(raw_command, cmd);
+    retval = get_command(raw_command, instruction);
     trim(raw_command);
-    cout << "\t[PARSING] New raw: " << raw_command << endl;
-    cout << "\t[PARSING] Cmd: " << cmd << endl;
+    cout << "\t[PARSING] Raw Command: " << raw_command << endl;
+    cout << "\t[PARSING] Instruction: " << instruction << endl;
     if (retval == -1) {
         cout << "[ERROR]" << endl;
         return retval;
     }
-    int num_expected_args = vs.get_registers()->get_num_args(cmd);
+    // By inspecting the proper number of arguments, the instruction itself is 
+    // verified. The arguments are completely unverified at this point.
+    int num_expected_args = vs.get_registers()->get_num_args(instruction);
     cout << "\t[PARSING] Number of args expected: " << num_expected_args << endl;
     switch (num_expected_args) {
         case 2:
@@ -160,49 +162,46 @@ int parse_command(VirtualSystem &vs,
 }
 
 /**
- * Given an argument "arg", determine the matching "arg_info"
- * for this arg by parsing out the required info.
- *
  * TODO: Later, identify if arg is compatible with opcode given.
  */
-int parse_argument(VirtualSystem &vs, string &arg, argument &arg_info) {
-    if (arg.length() == 0) {
+int parse_operand(VirtualSystem &vs, string &operand, ::operand &operand_info) {
+    if (operand.length() == 0) {
         cout << "[ERROR] Zero length argument. Invalid\n";
         return -1;
     }
-    if (arg.at(0) == '$') { // Operand: Immediate.
-        string immediate_str = arg.substr(1);
+    if (operand.at(0) == '$') { // Operand: Immediate.
+        string immediate_str = operand.substr(1);
         stringstream str(immediate_str);
         int val;
         str >> val;
         if (!str) {
-            cout << "Conversion to int failed\n";
+            cout << "[ERROR] Evaluating Immediate: Conversion to int failed\n";
             return -1;
         } else {
             cout << "Converted to int: " << val << endl;
-            arg_info.type = IMM;
-            arg_info.immediate = val;
+            operand_info.type = IMM;
+            operand_info.immediate = val;
             return 0;
         }
-    } else if (arg.find("%") != string::npos) { // Operand: Register (?)
-        cout << "\tIdentifying arg as containing reg, possibly memory\n";
-        registers_type reg = vs.get_registers()->get_reg_type(arg);
+    } else if (operand.find("%") != string::npos) { // Operand: Register (?)
+        cout << "\tIdentifying operand as containing reg, possibly memory\n";
+        registers_type reg = vs.get_registers()->get_reg_type(operand);
         if (reg != INVALID) {
             // Operand: Register (for certain)
-            cout << "\tInterpreted arg: " << arg << " as a register...\n";
-            arg_info.type = REG;
-            arg_info.reg = reg;
+            cout << "\tInterpreted operand: " << operand << " as a register...\n";
+            operand_info.type = REG;
+            operand_info.reg = reg;
             return 0;
         }
     }
     // Operand: Memory or error
-    int l_paren_count = count(arg.begin(), arg.end(), '(');
-    int l_paren_pos = arg.find("(");
-    int r_paren_count = count(arg.begin(), arg.end(), ')');
-    int r_paren_pos = arg.find(")");
+    int l_paren_count = count(operand.begin(), operand.end(), '(');
+    int l_paren_pos = operand.find("(");
+    int r_paren_count = count(operand.begin(), operand.end(), ')');
+    int r_paren_pos = operand.find(")");
     if ((l_paren_count == 0) && (r_paren_count == 0)) {
         // Absolute Addressing mode. Arg: Imm. Value: MEM[Imm].
-        stringstream str(arg);
+        stringstream str(operand);
         int val;
         str >> val;
         if (!str) {
@@ -210,8 +209,8 @@ int parse_argument(VirtualSystem &vs, string &arg, argument &arg_info) {
             return -1;
         } else {
             cout << "\tConverted to direct memory address: " << val << endl;
-            arg_info.type = ADDR;
-            arg_info.address = val;
+            operand_info.type = ADDR;
+            operand_info.address = val;
             return 0;
         }
 

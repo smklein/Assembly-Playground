@@ -39,7 +39,7 @@ class VirtualSystem {
      *
      * @return 0 on success, -1 on error.
      */
-    int execute_command(string &cmd, argument &src, argument &dest) {
+    int execute_command(string &cmd, operand &src, operand &dest) {
         // Arg1 / 2 can be
         // (1) Register
         // (2) Memory

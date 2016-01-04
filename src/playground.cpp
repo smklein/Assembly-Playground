@@ -14,42 +14,51 @@ using namespace std;
  * Given a piece of possibly malformed assembly from the user,
  * operate on the given registers and execute the command.
  */
-int evaluate_command(VirtualSystem &vs, string &raw_command) {
-    string cmd, src_arg, dest_arg;
+int evaluate_command(VirtualSystem &vs, string raw_command) {
+    string instruction, src_operand, dest_operand;
     output_dbg_eval_start(raw_command);
-    int num_args;
-    if ((num_args = parse_command(vs, raw_command, cmd, src_arg, dest_arg)) == -1) {
+
+
+    /*
+     * Parse out the instruction and operands from the input string.
+     *
+     * Since we are using move semantics, we can no longer use the
+     * "raw command" after this point.
+     */
+    int num_args = parse_command(vs, std::move(raw_command),
+                                 instruction, src_operand, dest_operand);
+    if (num_args == -1) {
         output_err_command_invalid();
         return -1;
     }
 
-    output_dbg_command_info(cmd, num_args, src_arg, dest_arg);
+    output_dbg_command_info(instruction, num_args, src_operand, dest_operand);
 
     // TODO: command is verified here, num args verified, args themselves
     // are not verified yet.
     
     // TODO: Filter the args. Identify information. Make them "trusted".
-    argument src_arg_info;
-    argument dest_arg_info;
+    ::operand src_operand_info;
+    ::operand dest_operand_info;
     
     // TODO Call this
     int retval;
     if (num_args >= 1) {
         output_dbg_parse_src();
-        retval = parse_argument(vs, src_arg, src_arg_info);
+        retval = parse_operand(vs, src_operand, src_operand_info);
         if (retval)
             return -1;
     }
     if (num_args == 2) {
         output_dbg_parse_dest();
-        retval = parse_argument(vs, dest_arg, dest_arg_info);
+        retval = parse_operand(vs, dest_operand, dest_operand_info);
         if (retval)
             return -1;
     }
 
-    // Handoff the operation to opcodes.cpp, which actually acts
+    // Handoff the operation to the virtual system, which actually acts
     // on the system state.
-    vs.execute_command(cmd, src_arg_info, dest_arg_info);
+    vs.execute_command(instruction, src_operand_info, dest_operand_info);
     
     return 0;
 }
@@ -79,7 +88,7 @@ void assembly_playground() {
             int address;
             str >> address;
             if (!str) {
-                cout << "[ERROR] Conversion to int failed\n";
+                cout << "[ERROR] Observing memory: Conversion to int failed\n";
             } else {
                 cout << hex << "MEM[ 0x" << address << " ]: ";
                 cout << "0x" << hex << (int) vs.get_memory(address) << endl;

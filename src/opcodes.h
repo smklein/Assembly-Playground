@@ -13,14 +13,17 @@ enum registers_type {
     INVALID
 };
 
-struct argument {
+/*
+ * Structure which defines a single operand.
+ */
+typedef struct operand {
     arg_type type;
     union {
         int32_t immediate;
         int32_t address; // This acts as an index into memory.
         registers_type reg;
     };  
-} ;
+} operand;
 
 class Registers {
   public:
