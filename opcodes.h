@@ -2,41 +2,48 @@
 #define __OPCODES_H__
 
 #include <string>
-#include "parsing.h"
 using namespace std;
 
-struct registers_x86 {
-    // General registers
-    int eax;
-    int ebx;
-    int ecx;
-    int edx;
-    
-    // Index and pointers
-    int esi;
-    int edi;
-    int ebp;
-    int eip;
-    int esp;
-    
-    // Segment registers
-    int cs; 
-    int ds; 
-    int es; 
-    int fs; 
-    int gs; 
-    int ss; 
-       
-    int eflags;
+enum arg_type { IMM, ADDR, REG };
+
+enum registers_type {
+    EAX, EBX, ECX, EDX,
+    ESI, EDI, EBP, EIP, ESP,
+    CS, DS, ES, FS, GS, SS, EFLAGS,
+    INVALID
+};
+
+struct argument {
+    arg_type type;
+    union {
+        int32_t immediate;
+        int32_t address; // This acts as an index into memory.
+        registers_type reg;
+    };  
 } ;
 
-void print(registers_x86 &reg);
+class Registers {
+  public:
+    // Given a particular "reg" enumeration code, return access to that
+    // register.
+    virtual int *register_location(registers_type reg) = 0;
 
-registers_x86_type get_reg_type(string &reg);
-int *get_register_location(registers_x86 &regs, registers_x86_type reg);
+    // Pretty print the registers
+    virtual void print() const = 0;
+    
+    /**
+     * @param[in] reg: percent escaped register name (i.e., "%eax").
+     * 
+     * @return Enumeration of register type (or INVALID on error).
+     */
+    virtual registers_type get_reg_type(const string &reg) = 0;
 
-int execute_command(char memory[], registers_x86 &reg,
-                    string &cmd, argument &src, argument &dest);
-int get_num_args(string opcode);
+    /**
+     * @param[in] opcode: string (i.e., "mov").
+     *
+     * @return Number of opcodes required for the supplied opcode.
+     */
+    virtual int get_num_args(const string &opcode) = 0;
+} ;
 
 #endif

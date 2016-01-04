@@ -12,20 +12,25 @@ using namespace std;
 #define OPERAND_SEPARATOR '+'
 
 // trim from start
-static inline string &ltrim(string &s) {
-    s.erase(s.begin(), find_if(s.begin(), s.end(), not1(ptr_fun<int, int>(isspace))));
-    return s;
+static inline void ltrim(string &s) {
+    s.erase(s.begin(), // Start of string
+            find_if(s.begin(), // End at the first non-space character
+                    s.end(),
+                    not1(ptr_fun<int, int>(isspace))));
 }
 
 // trim from end
-static inline string &rtrim(string &s) {
-    s.erase(find_if(s.rbegin(), s.rend(), not1(ptr_fun<int, int>(isspace))).base(), s.end());
-    return s;
+static inline void rtrim(string &s) {
+    s.erase(find_if(s.rbegin(), // Same as ltrim, but reversed
+                    s.rend(),
+                    not1(ptr_fun<int, int>(isspace))).base(),
+            s.end());
 }
 
 // trim from both ends
-string &trim(string &s) {
-    return ltrim(rtrim(s));
+void trim(string &s) {
+    ltrim(s);
+    rtrim(s);
 }
 
 /**
@@ -115,7 +120,8 @@ int get_two_arguments(string &command, string &src, string &dest) {
  * Given a full command, parse out the opcode, the source, and the destination
  * arguments. Do not interpret the arguments yet.
  */
-int parse_command(string &raw_command, string &cmd,
+int parse_command(VirtualSystem &vs,
+                  string &raw_command, string &cmd,
                   string &src, string &dest) {
     int retval;
     trim(raw_command);
@@ -134,7 +140,7 @@ int parse_command(string &raw_command, string &cmd,
         cout << "[ERROR]" << endl;
         return retval;
     }
-    int num_expected_args = get_num_args(cmd);
+    int num_expected_args = vs.get_registers()->get_num_args(cmd);
     cout << "\t[PARSING] Number of args expected: " << num_expected_args << endl;
     switch (num_expected_args) {
         case 2:
@@ -159,7 +165,7 @@ int parse_command(string &raw_command, string &cmd,
  *
  * TODO: Later, identify if arg is compatible with opcode given.
  */
-int parse_argument(string &arg, argument &arg_info) {
+int parse_argument(VirtualSystem &vs, string &arg, argument &arg_info) {
     if (arg.length() == 0) {
         cout << "[ERROR] Zero length argument. Invalid\n";
         return -1;
@@ -180,7 +186,7 @@ int parse_argument(string &arg, argument &arg_info) {
         }
     } else if (arg.find("%") != string::npos) { // Operand: Register (?)
         cout << "\tIdentifying arg as containing reg, possibly memory\n";
-        registers_x86_type reg = get_reg_type(arg);
+        registers_type reg = vs.get_registers()->get_reg_type(arg);
         if (reg != INVALID) {
             // Operand: Register (for certain)
             cout << "\tInterpreted arg: " << arg << " as a register...\n";
